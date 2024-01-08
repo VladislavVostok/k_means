@@ -15,13 +15,28 @@
 #define SAMPLE_RADIUS 4.0f
 #define MEAN_RADIUS (2*SAMPLE_RADIUS)
 #define AXIS_PADDING 4
+#define MAX_X FLT_MAX
+#define MIN_X FLT_MAX
+#define MAX_Y FLT_MAX
+#define MIN_Y FLT_MAX
 
-static Vector2 project_sample_to_screen(Vector2 sample, float min_x, float max_x, float min_y, float max_y){
+
+// static Vector2 project_sample_to_screen(Vector2 sample, float min_x, float max_x, float min_y, float max_y){
+//     float w = GetScreenWidth();
+//     float h = GetScreenHeight();
+//     return CLITERAL(Vector2){
+//         .x = (sample.x - min_x) / (max_x - min_x) * w,
+//         .y = h - (sample.y - min_y) / (max_y - min_y) * h,
+//     };
+// }
+
+
+static Vector2 project_sample_to_screen(Vector2 sample){
     float w = GetScreenWidth();
     float h = GetScreenHeight();
     return CLITERAL(Vector2){
-        .x = (sample.x - min_x) / (max_x - min_x) * w,
-        .y = h - (sample.y - min_y) / (max_y - min_y) * h,
+        .x = (sample.x - MIN_X) / (MAX_X - MIN_X) * w,
+        .y = h - (sample.y - MIN_Y) / (MAX_Y - MIN_Y) * h,
     };
 }
 
@@ -68,18 +83,33 @@ static Color colors[] = {
 };
 #define colors_count NOB_ARRAY_LEN(colors)
 
-void generate_new_state(float min_x, float max_x, float min_y, float max_y){
+// void generate_new_state(float min_x, float max_x, float min_y, float max_y){
+
+//     set.count = 0;
+//     generate_cluster(CLITERAL(Vector2){0}, 10,100, &set);
+//     generate_cluster(CLITERAL(Vector2){min_x*0.5f, max_y*0.5f}, 5, 50, &set);
+//     generate_cluster(CLITERAL(Vector2){max_x*0.5f, max_y*0.5f}, 5, 50, &set);
+//     generate_cluster(CLITERAL(Vector2){min_x*0.5f, min_y*0.5f}, 5, 50, &set);
+//     generate_cluster(CLITERAL(Vector2){max_x*0.5f, min_y*0.5f}, 5, 50, &set);
+
+//     for(size_t i = 0; i < K; ++i){
+//         means[i].x = Lerp(min_x, max_x, rand_float());
+//         means[i].y = Lerp(min_y, max_y, rand_float());
+//     }
+// }
+
+void generate_new_state(){
 
     set.count = 0;
     generate_cluster(CLITERAL(Vector2){0}, 10,100, &set);
-    generate_cluster(CLITERAL(Vector2){min_x*0.5f, max_y*0.5f}, 5, 50, &set);
-    generate_cluster(CLITERAL(Vector2){max_x*0.5f, max_y*0.5f}, 5, 50, &set);
-    generate_cluster(CLITERAL(Vector2){min_x*0.5f, min_y*0.5f}, 5, 50, &set);
-    generate_cluster(CLITERAL(Vector2){max_x*0.5f, min_y*0.5f}, 5, 50, &set);
+    generate_cluster(CLITERAL(Vector2){MIN_X*0.5f, MAX_Y*0.5f}, 5, 50, &set);
+    generate_cluster(CLITERAL(Vector2){MAX_X*0.5f, MAX_Y*0.5f}, 5, 50, &set);
+    generate_cluster(CLITERAL(Vector2){MIN_X*0.5f, MIN_Y*0.5f}, 5, 50, &set);
+    generate_cluster(CLITERAL(Vector2){MAX_X*0.5f, MIN_Y*0.5f}, 5, 50, &set);
 
     for(size_t i = 0; i < K; ++i){
-        means[i].x = Lerp(min_x, max_x, rand_float());
-        means[i].y = Lerp(min_y, max_y, rand_float());
+        means[i].x = Lerp(MIN_X, MAX_X, rand_float());
+        means[i].y = Lerp(MIN_Y, MAX_Y, rand_float());
     }
 }
 
@@ -104,7 +134,23 @@ void recluster_state(void){
     }
 }
 
-void update_means(float min_x, float max_x, float min_y, float max_y){
+// void update_means(float min_x, float max_x, float min_y, float max_y){
+//     for(size_t i = 0; i < K; ++i){
+//         if(clusters[i].count > 0){
+//             means[i] = Vector2Zero();
+//             for(size_t j = 0; j < clusters[i].count; ++j){
+//                 means[i] = Vector2Add(means[i], clusters[i].items[j]);
+//             }
+//             means[i].x /= clusters[i].count;
+//             means[i].y /= clusters[i].count;
+//         } else {
+//             means[i].x = Lerp(min_x, max_x, rand_float());
+//             means[i].y = Lerp(min_y, max_y, rand_float());
+//         }
+//     }
+// }
+
+void update_means(){
     for(size_t i = 0; i < K; ++i){
         if(clusters[i].count > 0){
             means[i] = Vector2Zero();
@@ -114,8 +160,8 @@ void update_means(float min_x, float max_x, float min_y, float max_y){
             means[i].x /= clusters[i].count;
             means[i].y /= clusters[i].count;
         } else {
-            means[i].x = Lerp(min_x, max_x, rand_float());
-            means[i].y = Lerp(min_y, max_y, rand_float());
+            means[i].x = Lerp(MIN_X, MAX_X, rand_float());
+            means[i].y = Lerp(MIN_Y, MAX_Y, rand_float());
         }
     }
 }
@@ -140,10 +186,10 @@ typedef enum {
 } Leaf_Attr;
 
 int main(void){
-    float min_x = FLT_MAX;
-    float max_x = FLT_MAX;
-    float min_y = FLT_MAX;
-    float max_y = FLT_MAX;
+    // float min_x = FLT_MAX;
+    // float max_x = FLT_MAX;
+    // float min_y = FLT_MAX;
+    // float max_y = FLT_MAX;
 
     // Parse leaf dataset
 /*    const char *leaf_path = "datasets/leaf/leaf.csv";
@@ -177,43 +223,51 @@ int main(void){
     nob_temp_reset();
 */
 
-    min_x *= 1.1;
-    max_x *= 1.1;
-    min_y *= 1.1;
-    max_y *= 1.1;
+    // min_x *= 1.1;
+    // max_x *= 1.1;
+    // min_y *= 1.1;
+    // max_y *= 1.1;
 
     //
     srand(time(0));
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(800, 600, "K-means");
 
-    generate_new_state(min_x, max_x, min_y, max_y);
+    // generate_new_state(min_x, max_x, min_y, max_y);
+    generate_new_state();
     recluster_state();
     
 
     while(!WindowShouldClose()){
         if (IsKeyPressed(KEY_R)){
-            generate_new_state(min_x, max_x, min_y, max_y);
+            // generate_new_state(min_x, max_x, min_y, max_y);
+            generate_new_state();
             recluster_state();
         }
         if (IsKeyPressed(KEY_SPACE)){
-            update_means(min_x, max_x, min_y, max_y);
+            // update_means(min_x, max_x, min_y, max_y);
+            generate_new_state();
             recluster_state();
         }
         BeginDrawing();
         ClearBackground(GetColor(0x181818AA));
         for(size_t i = 0; i < set.count; ++i){
             Vector2 it = set.items[i];
-            DrawCircleV(project_sample_to_screen(it, min_x, max_x, min_y, max_y), SAMPLE_RADIUS, RED);
+            // DrawCircleV(project_sample_to_screen(it, min_x, max_x, min_y, max_y), SAMPLE_RADIUS, RED);
+            DrawCircleV(project_sample_to_screen(it), SAMPLE_RADIUS, RED);
+
         }
         for(size_t i = 0; i < K; ++i){
             Color  color = colors[i%colors_count];
             for(size_t j = 0; j < clusters[i].count; ++j){
                 Vector2 it = clusters[i].items[j];
-                DrawCircleV(project_sample_to_screen(it, min_x, max_x, min_y, max_y), SAMPLE_RADIUS, color);
+                // DrawCircleV(project_sample_to_screen(it, min_x, max_x, min_y, max_y), SAMPLE_RADIUS, color);
+                DrawCircleV(project_sample_to_screen(it), SAMPLE_RADIUS, color);
             }
 
-            DrawCircleV(project_sample_to_screen(means[i], min_x, max_x, min_y, max_y), MEAN_RADIUS, color);
+            // DrawCircleV(project_sample_to_screen(means[i], min_x, max_x, min_y, max_y), MEAN_RADIUS, color);
+            DrawCircleV(project_sample_to_screen(means[i]), MEAN_RADIUS, color);
+        
         }
         EndDrawing();
     }
